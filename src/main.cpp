@@ -3,7 +3,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
-// #include <PubSubClient.h>
 
 
 #define INTERRUPTION_PIN 5 // D6
@@ -17,110 +16,17 @@
 #define LEFT 4
 #define SLEEP 5
 
-// #define UUU 111
-// #define UUR 112
-// #define UUD 113
-// #define UUL 114
-// #define URU 121
-// #define URR 122
-// #define URD 123
-// #define URL 124
-// #define UDU 131
-// #define UDR 132
-// #define UDD 133
-// #define UDL 134
-// #define ULU 141
-// #define ULR 142
-// #define ULD 143
-// #define ULL 144
-// #define RUU 211
-// #define RUR 212
-// #define RUD 213
-// #define RUL 214
-// #define RRU 221
-// #define RRR 222
-// #define RRD 223
-// #define RRL 224
-// #define RDU 231
-// #define RDR 232
-// #define RDD 233
-// #define RDL 234
-// #define RLU 241
-// #define RLR 242
-// #define RLD 243
-// #define RLL 244
-// #define DUU 311
-// #define DUR 312
-// #define DUD 313
-// #define DUL 314
-// #define DRU 321
-// #define DRR 322
-// #define DRD 323
-// #define DRL 324
-// #define DDU 331
-// #define DDR 332
-// #define DDD 333
-// #define DDL 334
-// #define DLU 341
-// #define DLR 342
-// #define DLD 343
-// #define DLL 344
-// #define LUU 411
-// #define LUR 412
-// #define LUD 413
-// #define LUL 414
-// #define LRU 421
-// #define LRR 422
-// #define LRD 423
-// #define LRL 424
-// #define LDU 431
-// #define LDR 432
-// #define LDD 433
-// #define LDL 434
-// #define LLU 441
-// #define LLR 442
-// #define LLD 443
-// #define LLL 444
-
 // WiFi configs
 const char* ssid = "FAMILIA MEDEIROS";
 const char* password = "sl23jo316";
 
-String api = "http://10.0.0.104:3000/makeMove";
+// String api = "http://10.0.0.104:3000/makeMove";
+String api;
 
-// // MQTT Config
-// const char *mqtt_broker = "MQTTIP";
-// const char *topic = "MPU/Keyboard";
-// const char *mqtt_username = "";
-// const char *mqtt_password = "";
-// const int mqtt_port = 1883;
 
 MPU motionSensor;
 WiFiClient espClient;
 HTTPClient http;
-// PubSubClient client(espClient);
-
-// unsigned short int commandsSequence[31][2] = {{UUU, 10},
-//                                               {UUR, 11},
-//                                               {UUD, 12},
-//                                               {UUL, 13},
-//                                               {URU, 14},
-//                                               {URR, 15},
-//                                               {URD, 16},
-//                                               {URL, 17},
-//                                               {UDU, 18},
-//                                               {UDR, 19},
-//                                               {UDD, 20},
-//                                               {UDL, 21},
-//                                               {ULU, 22},
-//                                               {ULR, 23},
-//                                               {ULD, 24},
-//                                               {ULL, 25},
-//                                               {RUU, 26},
-//                                               {RUR, 27},
-//                                               {RUD, 28},
-//                                               {DUU, 29},
-//                                               {LUU, 30}};
 
 // void wake()
 // {
@@ -138,7 +44,32 @@ String sendHttpPost(unsigned short int movementsSequence){
   int httpCode = http.POST(buf);
   String payload = http.getString();
   Serial.println(httpCode);
+  http.end();
   return payload;
+}
+
+bool getApi(IPAddress broadcast){
+  if (http.begin(espClient, "http://" + broadcast.toString() + ":3000/makeMove")) {
+      int httpCode = http.GET();
+      if (httpCode > 0) {
+        if (httpCode == HTTP_CODE_OK) {
+          String payload = http.getString();
+          Serial.println(payload);
+          api = "http://" + payload + ":3000/makeMove";
+          http.end();
+          return true;
+        } else {
+          Serial.print("Erro HTTP: ");
+          Serial.println(httpCode);
+          http.end();
+          return false;
+        }
+    } else {
+      Serial.println("Falha ao iniciar a solicitação HTTP");
+      return false;
+    }
+  }
+  return false;
 }
 
 void sleep()
@@ -216,6 +147,13 @@ void setupWifi(){
     delay(500);
     Serial.print(".");
   }
+  IPAddress broadcastIP = WiFi.localIP();
+  broadcastIP[3] = 255;
+  Serial.print("Enviando solicitação para o endereço de broadcast: ");
+  Serial.println(broadcastIP);
+  while(!getApi(broadcastIP)){
+    Serial.print(".");
+  }
   
   // Visual confirmation
   Serial.println("");
@@ -225,39 +163,6 @@ void setupWifi(){
   Serial.println("");
   
 }
-
-// void reconnectMQTT(){
-//   while(!client.connected()){
-//     if(client.connect("ESP8266", mqtt_username, mqtt_password)){
-//       Serial.println("Conected on Broker!!");
-//     } else {
-//       Serial.print("failed with state ");
-//       Serial.print(client.state());
-//       delay(2000);
-//     }
-//   }
-// }
-
-// void setupMQTT(){
-//   // Seting things here
-//   client.setServer(mqtt_broker, mqtt_port);
-//   Serial.println("Conecting to Broker...");
-  
-//   // Enlace until conects to the broker
-//   reconnectMQTT();
-
-//   client.subscribe(topic);
-// }
-
-// void pubDefualt(unsigned short int number)
-// {
-//     char convertion[2];
-//     itoa(number, convertion, 10);
-//     char msg[3];
-//     strcpy(msg, "C");
-//     strcpy(msg, convertion);
-//     client.publish(topic, msg);
-// }
 
 void setup()
 {
@@ -273,7 +178,6 @@ void setup()
   Serial.begin(9600);
 
   setupWifi();
-  // setupMQTT(); 
 }
 
 void loop()
@@ -281,10 +185,6 @@ void loop()
   if(WiFi.status() != WL_CONNECTED){
     Serial.println("Desconectou da Rede!!!!");
   }
-  // if(!client.connected()){
-  //   reconnectMQTT();
-  // }
-  // client.loop();
   unsigned long currentTime = 0;
   unsigned long previousTime = 0;
 
@@ -296,21 +196,10 @@ void loop()
   {
     if (movementsAmount == 3)
     {
-      // for (int row = 0; row < 21; row++)
-      // {
-      //   if (movementsSequence == commandsSequence[row][0])
-      //   {
-      //     pubDefualt(commandsSequence[row][1]);
-          
-      //     Serial.println("Comando enviado ");
-      //     Serial.print(commandsSequence[row][0]);
-      //     Serial.print(" | ");
-      //     Serial.print(commandsSequence[row][1]);
-      //     break;
-      //   }
-      // }
       String payload = sendHttpPost(movementsSequence);
-      Serial.println(payload);
+      if(payload=="-1"){
+        Serial.println("Error on sending");
+      }
 
       movementsSequence -= movementPerformed;
       movementsSequence /= 10;
