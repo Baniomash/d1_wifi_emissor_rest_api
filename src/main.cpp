@@ -55,7 +55,7 @@ bool getApi(IPAddress broadcast){
         if (httpCode == HTTP_CODE_OK) {
           String payload = http.getString();
           Serial.println(payload);
-          api = "http://" + payload + ":3000/makeMove";
+          api = payload;
           http.end();
           return true;
         } else {
