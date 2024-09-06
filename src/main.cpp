@@ -17,11 +17,11 @@
 #define SLEEP 5
 
 // WiFi configs
-const char* ssid = "FAMILIA MEDEIROS";
-const char* password = "sl23jo316";
+const char* ssid = "Lab_Hardware";
+const char* password = "abcd@1234";
 
-// String api = "http://10.0.0.104:3000/makeMove";
-String api;
+String api = "http://192.168.199.2:3000/makeMove";
+// String api;
 
 
 MPU motionSensor;
@@ -75,9 +75,9 @@ bool getApi(IPAddress broadcast){
 void sleep()
 {
 //  attachInterrupt(digitalPinToInterrupt(INTERRUPTION_PIN), wake, HIGH);
-
 //  esp_deep_sleep_enable_gpio_wakeup(1ULL << INTERRUPTION_PIN,ESP_GPIO_WAKEUP_GPIO_HIGH);
 //  esp_deep_sleep_start();
+  // ESP.deepSleep(0);
 }
 
 unsigned char verifyMovement()
@@ -147,13 +147,12 @@ void setupWifi(){
     delay(500);
     Serial.print(".");
   }
-  IPAddress broadcastIP = WiFi.localIP();
-  broadcastIP[3] = 255;
-  Serial.print("Enviando solicitação para o endereço de broadcast: ");
-  Serial.println(broadcastIP);
-  while(!getApi(broadcastIP)){
-    Serial.print(".");
-  }
+  // IPAddress broadcastIP = WiFi.broadcastIP();
+  // Serial.print("Enviando solicitação para o endereço de broadcast: ");
+  // Serial.println(broadcastIP);
+  // while(!getApi(broadcastIP)){
+  //   Serial.print(".");
+  // }
   
   // Visual confirmation
   Serial.println("");
